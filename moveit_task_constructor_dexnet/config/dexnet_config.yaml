@@ -1,4 +1,7 @@
 # file path to neural network weights and model config
-model_name: "GQCNN-4.0-PJ"
-model_dir: "/home/bostoncleek/dex-net/deps/gqcnn/models/GQCNN-4.0-PJ"
-model_params: "/home/bostoncleek/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_4.0_pj.yaml"
+# model_name: "GQCNN-4.0-PJ"
+# model_dir: "/home/bostoncleek/dex-net/deps/gqcnn/models/GQCNN-4.0-PJ"
+# model_params: "/home/bostoncleek/dex-net/deps/gqcnn/cfg/examples/replication/dex-net_4.0_pj.yaml"
+model_name: "FC-GQCNN-4.0-PJ"
+model_dir: "/home/avaz/new_dockerfile/dexnet_deps/gqcnn/models/FC-GQCNN-4.0-PJ"
+model_params: "/home/avaz/new_dockerfile/dexnet_deps/gqcnn/cfg/examples/replication/dex-net_4.0_fc_pj.yaml"
