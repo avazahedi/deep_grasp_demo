@@ -24,5 +24,6 @@
 
   <exec_depend>deep_grasp_task</exec_depend>
   <exec_depend>message_runtime</exec_depend>
+  <exec_depend>j2s7s300_moveit_config</exec_depend>
   <!-- <exec_depend version_gte="0.7.4">panda_moveit_config</exec_depend> -->
 </package>
