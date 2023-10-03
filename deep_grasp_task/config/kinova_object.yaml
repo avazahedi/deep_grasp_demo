@@ -25,10 +25,6 @@ spawn_mesh: false
 object_name: "object"
 object_dimensions: [0.25, 0.02] # [height, radius]
 object_pose: [0.5, -0.25, 0.0, 0, 0, 0]
-# spawn_mesh: false
-# object_name: "object"
-# object_dimensions: [0.25, 0.02] # [height, radius]
-# object_pose: [0.5, -0.4, 0.0, 0, 0, 0]
 
 # # BAR CLAMP
 # spawn_mesh: true
@@ -60,7 +56,8 @@ table_pose: [0.5, -0.25, 0, 0, 0, 0]
 #### Jaco j2s7s300 end-effector frame is in the middle of gripper ####
 # Gripper grasp frame transform [x,y,z,r,p,y]
 # grasp_frame_transform: [0, 0, 0.05, 1.571, 0.785, 1.571]
-grasp_frame_transform: [0, 0, 0.04, 1.571, 0.785, 1.571]
+# grasp_frame_transform: [0, 0, 0.04, 1.571, 0.785, 1.571]
+grasp_frame_transform: [0, 0, 0, 1.571, 0.785, 1.571]
 
 # Place pose [x,y,z,r,p,y]
 # place_pose: [0.5, 0.3, 0, 0, 0, 0]
