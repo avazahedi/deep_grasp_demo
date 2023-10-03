@@ -229,14 +229,6 @@ void DeepPickPlaceTask::init()
       stage->allowCollisions(
           object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
           true);
-
-      // std::cout << "############################################\n";
-      // auto info = t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry();
-      // for (auto val : info) {
-      //   std::cout << val << "\n";
-      // }
-      // std::cout << "############################################\n";
-
       grasp->insert(std::move(stage));
     }
 

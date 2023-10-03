@@ -18,12 +18,7 @@ image_geometry_filename = 0
 # hand_height = 0.02
 # init_bite = 0.01
 
-# Kinova (units????) (m?)
-# finger_width = 0.01
-# hand_outer_diameter = 0.12
-# hand_depth = 0.06
-# hand_height = 0.02
-# init_bite = 0.01
+# Kinova (Visual approximation) (units: m?)
 finger_width = 0.02
 hand_outer_diameter = 0.1
 hand_depth = 0.06
