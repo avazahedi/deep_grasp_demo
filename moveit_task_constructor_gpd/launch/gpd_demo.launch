@@ -4,10 +4,13 @@
 
   <arg name="action_name" value="generate_grasps" doc="action name space"/>
   <arg name="frame_id" value="root" doc="frame of the grasps sent to MTC"/>
-  <arg unless="$(arg load_cloud)" name="point_cloud_topic" value="/camera/depth/color/points" doc="point cloud topic name"/>
+  <!-- <arg unless="$(arg load_cloud)" name="point_cloud_topic" value="/camera/depth/color/points" doc="point cloud topic name"/> -->
+  <arg unless="$(arg load_cloud)" name="point_cloud_topic" value="/cloud_pcd" doc="point cloud topic name"/>
 
   <!-- file paths -->
   <arg if="$(arg load_cloud)" name="path_to_pcd_file" value="$(find moveit_task_constructor_gpd)/data/pointclouds/cylinder.pcd" doc="path to point cloud file"/>
+  <!-- <arg if="$(arg load_cloud)" name="path_to_pcd_file" value="$(find moveit_task_constructor_gpd)/data/pointclouds/barclamp.pcd" doc="path to point cloud file"/> -->
+  <!-- <arg if="$(arg load_cloud)" name="path_to_pcd_file" value="$(find jaco_grasp_ros)/test_meshlab.pcd" doc="path to point cloud file"/> -->
   <arg name="path_to_gpd_config" value="$(find moveit_task_constructor_gpd)/config/gpd_config.yaml" doc="path to GPD config and gripper params file"/>
 
   <!-- Run MTC pick and place -->
