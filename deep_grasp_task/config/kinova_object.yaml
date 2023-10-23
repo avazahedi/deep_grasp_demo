@@ -49,11 +49,12 @@ camera_pose: [0.5, 0, 0.7, 0, 0, 0] # side
 # camera_pose: [0.5, 0, 0.7, 0, 1.571, 1.571] # over head
 
 # Table model
-spawn_table: false
+spawn_table: true
 table_name: "table"
-table_dimensions: [0.4, 0.5, 0.1]  # [length, width, height]
+# table_dimensions: [0.4, 0.5, 0.1]  # [length, width, height]
 # table_pose: [0.5, -0.25, 0, 0, 0, 0]
-table_pose: [0.5, 0, 0, 0, 0, 0]
+table_dimensions: [2.0, 2.0, 0.1]  # [length, width, height]
+table_pose: [0, 0, -0.01, 0, 0, 0]
 
 #### Jaco j2s7s300 end-effector frame is in the middle of gripper ####
 # Gripper grasp frame transform [x,y,z,r,p,y]

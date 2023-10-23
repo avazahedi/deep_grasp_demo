@@ -168,10 +168,6 @@ void GraspDetection::sampleGrasps()
     grasp_pose.pose.position.y = trans.y();
     grasp_pose.pose.position.z = trans.z();
 
-    std::cout << "\n\ngrasp_pose x: " << grasp_pose.pose.position.x;
-    std::cout << "\n\ngrasp_pose y: " << grasp_pose.pose.position.y;
-    std::cout << "\n\ngrasp_pose z: " << grasp_pose.pose.position.z << "\n\n";
-
     grasp_pose.pose.orientation.w = rot.w();
     grasp_pose.pose.orientation.x = rot.x();
     grasp_pose.pose.orientation.y = rot.y();
