@@ -190,8 +190,6 @@ void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
     PointCloudRGB::Ptr cloud(new PointCloudRGB);
     pcl::fromROSMsg(*msg.get(), *cloud.get());
 
-    std::cout << "INSIDE GRASP_DETECTION CLOUDCALLBACK \n\n\n";
-
     // Segementation works best with XYXRGB
     // removeTable(cloud);
 
