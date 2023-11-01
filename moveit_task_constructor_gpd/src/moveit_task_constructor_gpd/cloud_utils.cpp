@@ -43,6 +43,7 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/passthrough.h>
+#include <pcl/filters/radius_outlier_removal.h>
 
 #include <moveit_task_constructor_gpd/cloud_utils.h>
 
@@ -108,4 +109,15 @@ void passThroughFilter(const std::vector<double>& xyz_lower, const std::vector<d
   pass.setFilterLimits(xyz_lower.at(2), xyz_upper.at(2));
   pass.filter(*cloud.get());
 }
+
+void radiusOutlierRemoval(double radius, int min_neighbors, PointCloudRGB::Ptr cloud)
+{
+  pcl::RadiusOutlierRemoval<pcl::PointXYZRGB> out_rem;
+  out_rem.setInputCloud(cloud);
+
+  out_rem.setRadiusSearch(radius);
+  out_rem.setMinNeighborsInRadius(min_neighbors);
+  out_rem.filter(*cloud.get());
+}
+
 }  // namespace moveit_task_constructor_gpd

@@ -62,4 +62,13 @@ void removeTable(PointCloudRGB::Ptr cloud);
  */
 void passThroughFilter(const std::vector<double>& xyz_lower, const std::vector<double>& xyz_upper,
                        PointCloudRGB::Ptr cloud);
+
+/**
+ * @brief Removes outliers based on sphere search and neighboring points
+ * @param radius - radius of the sphere that will determine which points are neighbors
+ * @param min_neighbors - number of neighbors that need to be present in order to be classified as 
+ *                        an inlier
+ * @param [out] cloud - cloud XYZRGB
+*/
+void radiusOutlierRemoval(double radius, int min_neighbors, PointCloudRGB::Ptr cloud);
 }  // namespace moveit_task_constructor_gpd
