@@ -44,10 +44,8 @@
 
 namespace moveit_task_constructor_gpd
 {
-// CloudServer::CloudServer(ros::NodeHandle& nh) : nh_(nh), save_(false)
-CloudServer::CloudServer(ros::NodeHandle& nh) : nh_(nh), save_(true)
+CloudServer::CloudServer(ros::NodeHandle& nh) : nh_(nh), save_(false)
 {
-  std::cout << "VALUE OF SAVE: " << save_ << "\n\n\n";
   loadParameters();
   init();
 }
@@ -81,12 +79,9 @@ void CloudServer::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
   if (save_)
   {
-    std::cout << "!!!!!!!!!! SAVE_ IS TRUE !!!!!!!!!!\n\n\n\n";
     // convert from ROS msg to a point cloud
     PointCloudRGB::Ptr cloud(new PointCloudRGB);
     pcl::fromROSMsg(*msg.get(), *cloud.get());
-
-    std::cout << "remove_table_: " << remove_table_ << "\ncartesian_limits_: " << cartesian_limits_ << "\n\n\n\n";
 
     // segment out table
     if (remove_table_)

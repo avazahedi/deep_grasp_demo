@@ -24,6 +24,7 @@ surface_link: "table"
 spawn_mesh: false
 object_name: "object"
 object_dimensions: [0.25, 0.02] # [height, radius]
+# object_dimensions: [0.25, 0.035] # [height, radius] # pringle can
 # object_pose: [0.5, -0.25, 0.0, 0, 0, 0]
 object_pose: [0.5, 0, 0, 0, 0, 0]
 # object_pose: [0, -0.5, 0, 0, 0, 0]

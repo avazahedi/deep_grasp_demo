@@ -40,6 +40,8 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <rosparam_shortcuts/rosparam_shortcuts.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl/surface/mls.h>
+#include <pcl/filters/voxel_grid.h>
 #include <moveit_msgs/Grasp.h>
 
 // Eigen
@@ -185,6 +187,16 @@ void GraspDetection::sampleGrasps()
 
 void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
+  // Make sure RealSense has enough time to get a full point cloud before starting processing
+  if (msg->data.size() < 2300000 && point_cloud_topic_ != "/cloud_pcd") {
+    // std::cout << "\nNUMBER OF POINTS IN MSG: " << msg->data.size() << "\n"; 
+    return;
+  }
+
+  // if (point_cloud_topic_ == "/cloud_pcd") {
+  //   std::cout << "\nNUMBER OF POINTS IN CYLINDER PCD FILE FROM TOPIC: " << msg->data.size() << "\n";
+  // }
+
   if (goal_active_)
   {
     PointCloudRGB::Ptr cloud(new PointCloudRGB);
@@ -192,6 +204,33 @@ void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
 
     // Segementation works best with XYXRGB
     // removeTable(cloud);
+
+    // Filtering
+    // m
+    // std::vector<double> xyz_lower{-0.2, -0.7, 0.01};
+    // std::vector<double> xyz_upper{0.2, 0.1, 0.5};
+
+    std::vector<double> xyz_lower{-0.2, -0.7, 0.01};
+    std::vector<double> xyz_upper{0.2, 0.1, 0.5};
+    passThroughFilter(xyz_lower, xyz_upper, cloud);
+
+    // double radius = 0.01;
+    double radius = 0.005;
+    int min_neighbors = 5;
+    radiusOutlierRemoval(radius, min_neighbors, cloud);
+
+    // VoxelGrid
+    pcl::VoxelGrid<pcl::PointXYZRGB> sor;
+    sor.setInputCloud(cloud);
+    sor.setLeafSize(0.01f, 0.01f, 0.01f);
+    sor.filter(*cloud.get());
+
+    // Smoothing
+    // pcl::MovingLeastSquares<pcl::PointXYZRGB, pcl::PointXYZRGB> mls;
+    // mls.setInputCloud(cloud);
+    // mls.setSearchRadius(0.03);
+    // mls.process(*cloud.get());
+
 
     // publish the cloud for visualization and debugging purposes
     sensor_msgs::PointCloud2 cloud_msg;
