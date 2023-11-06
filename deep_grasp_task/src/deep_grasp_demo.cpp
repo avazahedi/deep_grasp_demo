@@ -54,6 +54,15 @@
 
 constexpr char LOGNAME[] = "deep_grasp_demo";
 
+
+enum class Stage : uint8_t
+{
+  planning = 0,
+  executed = 1,
+  stopped = 2
+};
+
+
 void spawnObject(moveit::planning_interface::PlanningSceneInterface& psi, const moveit_msgs::CollisionObject& object)
 {
   if (!psi.applyCollisionObject(object))
@@ -179,6 +188,9 @@ int main(int argc, char** argv)
   ros::AsyncSpinner spinner(1);
   spinner.start();
 
+  auto stage = Stage::planning;
+  auto num_attempts = 0;
+
   // Wait for ApplyPlanningScene service
   ros::Duration(1.0).sleep();
 
@@ -207,26 +219,37 @@ int main(int argc, char** argv)
   }
 
   // Construct and run task
-  deep_grasp_task::DeepPickPlaceTask deep_pick_place_task("deep_pick_place_task", nh);
-  deep_pick_place_task.loadParameters();
-  deep_pick_place_task.init();
+  while (stage == Stage::planning) {
+    deep_grasp_task::DeepPickPlaceTask deep_pick_place_task("deep_pick_place_task", nh);
+    deep_pick_place_task.loadParameters();
+    deep_pick_place_task.init();
 
-  if (deep_pick_place_task.plan())
-  {
-    ROS_INFO_NAMED(LOGNAME, "Planning succeded");
-    if (pnh.param("execute", false))
+    if (deep_pick_place_task.plan())
     {
-      deep_pick_place_task.execute();
-      ROS_INFO_NAMED(LOGNAME, "Execution complete");
+      ROS_INFO_NAMED(LOGNAME, "Planning succeded");
+      if (pnh.param("execute", false))
+      {
+        deep_pick_place_task.execute();
+        ROS_INFO_NAMED(LOGNAME, "Execution complete");
+      }
+      else
+      {
+        ROS_INFO_NAMED(LOGNAME, "Execution disabled");
+      }
+      stage = Stage::executed;
     }
     else
     {
-      ROS_INFO_NAMED(LOGNAME, "Execution disabled");
+      ROS_INFO_NAMED(LOGNAME, "Planning failed");
+      std::cout << "\n\n\n";
+      ROS_INFO_NAMED(LOGNAME, "Trying again...");
+      num_attempts++;
+      std::cout << "num_attempts: " << num_attempts << "\n";
+      if (num_attempts >= 5) {
+        ROS_INFO_NAMED(LOGNAME, "5 attempts have failed. Please restart.");
+        stage = Stage::stopped;
+      }
     }
-  }
-  else
-  {
-    ROS_INFO_NAMED(LOGNAME, "Planning failed");
   }
 
   // Keep introspection alive
