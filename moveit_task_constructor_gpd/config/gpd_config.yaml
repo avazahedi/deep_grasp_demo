@@ -64,7 +64,7 @@ sample_above_plane = 0
 #   rotation_axes: the axes about which the point neighborhood gets rotated
 # num_samples = 50
 num_samples = 100
-num_threads = 4
+num_threads = 6
 nn_radius = 0.01
 num_orientations = 8
 num_finger_placements = 10

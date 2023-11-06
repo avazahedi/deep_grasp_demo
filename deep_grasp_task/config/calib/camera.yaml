@@ -5,6 +5,13 @@ trans_cam_opt: [0.0, 0.0, 0.0, 0.5, -0.5, 0.5, -0.5]
 # transformation from base link to camera link [x y z qw qx qy qz]
 # when camera is to the right of the robot (cylinder)
 # trans_base_cam: [0.0, -0.25, 0.04, 0.0, 0.0, 0.0, 0.0]
-trans_base_cam: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+# trans_base_cam: [0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0]
+
+# with respect to world: 
+# -pi/2 rotation about the Z-axis, 
+# 0.1m translation in negative Y-axis, 
+# 0.1m translation in the positive Z-axis
+trans_base_cam: [0.0, -0.1, 0.1, 0.7071, 0.0, 0.0, -0.7071]
+
 # when camera is in the overhead position
 # trans_base_cam: [0.500, 0.000, 0.700, 0.707, 0.000, 0.707, 0.000]

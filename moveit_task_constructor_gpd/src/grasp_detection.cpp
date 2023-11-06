@@ -155,7 +155,7 @@ void GraspDetection::sampleGrasps()
 
   for (auto id : grasp_id)
   {
-    // transform grasp from camera optical link into frame_id (panda_link0)
+    // transform grasp from camera optical link into frame_id (panda_link0, root)
     const Eigen::Isometry3d transform_opt_grasp =
         Eigen::Translation3d(grasps.at(id)->getPosition()) * Eigen::Quaterniond(grasps.at(id)->getOrientation());
 
@@ -214,15 +214,17 @@ void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
     std::vector<double> xyz_upper{0.2, 0.1, 0.5};
     passThroughFilter(xyz_lower, xyz_upper, cloud);
 
-    // double radius = 0.01;
-    double radius = 0.005;
+    double radius = 0.01;
     int min_neighbors = 5;
+    // double radius = 0.005;
+    // int min_neighbors = 15;
     radiusOutlierRemoval(radius, min_neighbors, cloud);
 
     // VoxelGrid
     pcl::VoxelGrid<pcl::PointXYZRGB> sor;
     sor.setInputCloud(cloud);
     sor.setLeafSize(0.01f, 0.01f, 0.01f);
+    // sor.setLeafSize(0.005f, 0.005f, 0.005f);
     sor.filter(*cloud.get());
 
     // Smoothing
