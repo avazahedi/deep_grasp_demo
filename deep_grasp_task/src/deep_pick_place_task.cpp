@@ -106,6 +106,8 @@ void DeepPickPlaceTask::init()
 
   // Sampling planner
   auto sampling_planner = std::make_shared<solvers::PipelinePlanner>();
+  // sampling_planner->setPlannerId("RRTConnectkConfigDefault");
+  sampling_planner->setPlannerId("PRMkConfigDefault");
   sampling_planner->setProperty("goal_joint_tolerance", 1e-5);
 
   // Cartesian planner
