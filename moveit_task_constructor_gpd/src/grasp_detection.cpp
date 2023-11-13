@@ -42,6 +42,8 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/surface/mls.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/impl/point_types.hpp>
 #include <moveit_msgs/Grasp.h>
 
 // Eigen
@@ -207,11 +209,11 @@ void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
 
     // Filtering
     // m
-    // std::vector<double> xyz_lower{-0.2, -0.7, 0.01};
-    // std::vector<double> xyz_upper{0.2, 0.1, 0.5};
-
     std::vector<double> xyz_lower{-0.2, -0.7, 0.01};
     std::vector<double> xyz_upper{0.2, 0.1, 0.5};
+
+    // std::vector<double> xyz_lower{-0.5, -0.8, 0};
+    // std::vector<double> xyz_upper{0.5, 0.5, 0.8};
     passThroughFilter(xyz_lower, xyz_upper, cloud);
 
     double radius = 0.01;
@@ -221,11 +223,11 @@ void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
     radiusOutlierRemoval(radius, min_neighbors, cloud);
 
     // VoxelGrid
-    pcl::VoxelGrid<pcl::PointXYZRGB> sor;
-    sor.setInputCloud(cloud);
-    sor.setLeafSize(0.01f, 0.01f, 0.01f);
-    // sor.setLeafSize(0.005f, 0.005f, 0.005f);
-    sor.filter(*cloud.get());
+    pcl::VoxelGrid<pcl::PointXYZRGB> voxgrid;
+    voxgrid.setInputCloud(cloud);
+    voxgrid.setLeafSize(0.01f, 0.01f, 0.01f);
+    // voxgrid.setLeafSize(0.005f, 0.005f, 0.005f);
+    voxgrid.filter(*cloud.get());
 
     // Smoothing
     // pcl::MovingLeastSquares<pcl::PointXYZRGB, pcl::PointXYZRGB> mls;
@@ -233,6 +235,32 @@ void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
     // mls.setSearchRadius(0.03);
     // mls.process(*cloud.get());
 
+
+    // ****** PCL segmentation ******
+    // pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+    // pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+    // pcl::SACSegmentation<pcl::PointXYZRGB> sacseg;
+    // // optional 
+    // sacseg.setOptimizeCoefficients(true);
+    // // mandatory 
+    // sacseg.setModelType(pcl::SACMODEL_PLANE);
+    // sacseg.setMethodType(pcl::SAC_RANSAC);
+    // sacseg.setDistanceThreshold(0.01);
+    
+    // sacseg.setInputCloud(cloud);
+    // sacseg.segment(*inliers, *coefficients);
+
+    // PointCloudRGB::Ptr segmented_cloud(new PointCloudRGB);
+    // for (const auto& idx: inliers->indices) {
+    //   segmented_cloud->points.push_back(cloud->points[idx]);
+    // }
+
+    // segmented_cloud->header.frame_id = cloud->header.frame_id;
+    // sensor_msgs::PointCloud2 segmented_cloud_msg;
+    // pcl::toROSMsg(*segmented_cloud.get(), segmented_cloud_msg);
+    // cloud_pub_.publish(segmented_cloud_msg);
+
+    // ****** PCL segmentation ******
 
     // publish the cloud for visualization and debugging purposes
     sensor_msgs::PointCloud2 cloud_msg;
