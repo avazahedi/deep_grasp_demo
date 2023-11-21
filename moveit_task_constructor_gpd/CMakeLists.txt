@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
 	rosparam_shortcuts
 	sensor_msgs
 	std_msgs
+	jaco_grasp_ros_interfaces
 )
 
 # System dependencies are found with CMake's conventions

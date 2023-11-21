@@ -49,6 +49,9 @@
 // Eigen
 #include <Eigen/Dense>
 
+// Object Detection
+#include "jaco_grasp_ros_interfaces/BboxCoords.h"
+
 #include <moveit_task_constructor_gpd/grasp_detection.h>
 #include <moveit_task_constructor_gpd/cloud_utils.h>
 
@@ -106,10 +109,28 @@ void GraspDetection::init()
   {
     cloud_sub_ = nh_.subscribe(point_cloud_topic_, 1, &GraspDetection::cloudCallback, this);
     cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("segmented_cloud", 1, true);
+
+    // subscriber to /passthrough_filter_vals
+    passthrough_sub_ = nh_.subscribe("/passthrough_filter_vals", 1, &GraspDetection::passthroughCallback, this);
+
+    // initialize passthrough values to -99 (dummy default value)
+    pass_xmin = -99;
+    pass_xmax = -99;
+    pass_ymax = -99;
+    pass_ymin = -99;
   }
 
   // Grasp detector
   grasp_detector_.reset(new gpd::GraspDetector(path_to_gpd_config_));
+}
+
+void GraspDetection::passthroughCallback(const jaco_grasp_ros_interfaces::BboxCoords::ConstPtr& msg)
+{
+  ROS_INFO_NAMED(LOGNAME, "inside passthrough callback in grasp detection!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+  pass_xmin = msg->left[0];
+  pass_xmax = msg->right[0];
+  pass_ymax = msg->top[1];
+  pass_ymin = msg->bottom[1];
 }
 
 void GraspDetection::goalCallback()
@@ -195,6 +216,11 @@ void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
     return;
   }
 
+  // Make sure passthrough values have been initialized by YOLO object detection bounding box
+  if ((pass_xmin == -99 || pass_xmax == -99 || pass_ymax == -99 || pass_ymin == -99) && point_cloud_topic_ != "/cloud_pcd") {
+    return;
+  }
+
   // if (point_cloud_topic_ == "/cloud_pcd") {
   //   std::cout << "\nNUMBER OF POINTS IN CYLINDER PCD FILE FROM TOPIC: " << msg->data.size() << "\n";
   // }
@@ -209,11 +235,12 @@ void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
 
     // Filtering
     // m
-    std::vector<double> xyz_lower{-0.2, -0.7, 0.01};
-    std::vector<double> xyz_upper{0.2, 0.1, 0.5};
+    // std::vector<double> xyz_lower{-0.2, -0.7, 0.01};
+    // std::vector<double> xyz_upper{0.2, 0.1, 0.5};
 
-    // std::vector<double> xyz_lower{-0.5, -0.8, 0};
-    // std::vector<double> xyz_upper{0.5, 0.5, 0.8};
+    // Manually limiting depth to 1.0m from camera
+    std::vector<double> xyz_lower{pass_xmin, pass_ymin, 0.01};
+    std::vector<double> xyz_upper{pass_xmax, pass_ymax, 1.0};
     passThroughFilter(xyz_lower, xyz_upper, cloud);
 
     double radius = 0.01;

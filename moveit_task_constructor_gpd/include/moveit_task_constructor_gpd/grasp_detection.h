@@ -46,6 +46,9 @@
 // Eigen
 #include <Eigen/Geometry>
 
+// Object Detection
+#include "jaco_grasp_ros_interfaces/BboxCoords.h"
+
 // GPD
 #include <gpd/util/cloud.h>
 #include <gpd/grasp_detector.h>
@@ -115,10 +118,18 @@ private:
    */
   void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
 
+  /**
+   * @brief Passthrough values callback
+   * @param msg - custom BboxCoords msg type containing points for the center of each side of the bounding box
+   * @details To be used in passthrough filter to isolate object in point cloud
+  */
+  void passthroughCallback(const jaco_grasp_ros_interfaces::BboxCoords::ConstPtr& msg);
+
 private:
   ros::NodeHandle nh_;         // node handle
   ros::Subscriber cloud_sub_;  // subscribes to point cloud
   ros::Publisher cloud_pub_;   // publishes segmented cloud
+  ros::Subscriber passthrough_sub_; //subscribes to passthrough values (custom jaco_grasp_ros_interfaces msg)
 
   std::unique_ptr<actionlib::SimpleActionServer<grasping_msgs::GraspPlanningAction>> server_;  // action server
   grasping_msgs::GraspPlanningFeedback feedback_;  // action feedback message
@@ -130,6 +141,11 @@ private:
   std::string goal_name_;           // action name
   std::string action_name_;         // action namespace
   std::string frame_id_;            // frame of point cloud/grasps
+
+  float pass_xmin;  // min x value for passthrough filter
+  float pass_xmax;  // max x value for passthrough filter
+  float pass_ymin;  // min y value for passthrough filter
+  float pass_ymax;  // max y value for passthrough filter
 
   bool goal_active_;  // action goal status
   bool load_cloud_;   // load cloud from file

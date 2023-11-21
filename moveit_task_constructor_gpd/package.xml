@@ -21,6 +21,7 @@
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>moveit_msgs</depend>
+  <depend>jack_grasp_ros_interfaces</depend>
 
   <exec_depend>deep_grasp_task</exec_depend>
   <exec_depend>message_runtime</exec_depend>
