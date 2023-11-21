@@ -146,6 +146,7 @@ private:
   float pass_xmax;  // max x value for passthrough filter
   float pass_ymin;  // min y value for passthrough filter
   float pass_ymax;  // max y value for passthrough filter
+  float pass_depth; // max z value for passthrough filter
 
   bool goal_active_;  // action goal status
   bool load_cloud_;   // load cloud from file

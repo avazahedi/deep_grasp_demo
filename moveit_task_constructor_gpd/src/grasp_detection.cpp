@@ -118,6 +118,7 @@ void GraspDetection::init()
     pass_xmax = -99;
     pass_ymax = -99;
     pass_ymin = -99;
+    pass_depth = -99;
   }
 
   // Grasp detector
@@ -126,11 +127,11 @@ void GraspDetection::init()
 
 void GraspDetection::passthroughCallback(const jaco_grasp_ros_interfaces::BboxCoords::ConstPtr& msg)
 {
-  ROS_INFO_NAMED(LOGNAME, "inside passthrough callback in grasp detection!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
   pass_xmin = msg->left[0];
   pass_xmax = msg->right[0];
   pass_ymax = msg->top[1];
   pass_ymin = msg->bottom[1];
+  pass_depth = msg->center_depth;
 }
 
 void GraspDetection::goalCallback()
@@ -212,41 +213,29 @@ void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
 {
   // Make sure RealSense has enough time to get a full point cloud before starting processing
   if (msg->data.size() < 2300000 && point_cloud_topic_ != "/cloud_pcd") {
-    // std::cout << "\nNUMBER OF POINTS IN MSG: " << msg->data.size() << "\n"; 
     return;
   }
 
   // Make sure passthrough values have been initialized by YOLO object detection bounding box
-  if ((pass_xmin == -99 || pass_xmax == -99 || pass_ymax == -99 || pass_ymin == -99) && point_cloud_topic_ != "/cloud_pcd") {
+  if ((pass_xmin == -99 || pass_xmax == -99 || pass_ymax == -99 || pass_ymin == -99 || pass_depth == -99) && point_cloud_topic_ != "/cloud_pcd") {
     return;
   }
-
-  // if (point_cloud_topic_ == "/cloud_pcd") {
-  //   std::cout << "\nNUMBER OF POINTS IN CYLINDER PCD FILE FROM TOPIC: " << msg->data.size() << "\n";
-  // }
 
   if (goal_active_)
   {
     PointCloudRGB::Ptr cloud(new PointCloudRGB);
     pcl::fromROSMsg(*msg.get(), *cloud.get());
 
-    // Segementation works best with XYXRGB
-    // removeTable(cloud);
-
-    // Filtering
-    // m
-    // std::vector<double> xyz_lower{-0.2, -0.7, 0.01};
-    // std::vector<double> xyz_upper{0.2, 0.1, 0.5};
-
-    // Manually limiting depth to 1.0m from camera
+    // Filtering (units: m)
+    // Assuming object is less than 0.1m thick (depth for passthrough)
     std::vector<double> xyz_lower{pass_xmin, pass_ymin, 0.01};
-    std::vector<double> xyz_upper{pass_xmax, pass_ymax, 1.0};
+    std::vector<double> xyz_upper{pass_xmax, pass_ymax, pass_depth + 0.1};
     passThroughFilter(xyz_lower, xyz_upper, cloud);
 
-    double radius = 0.01;
-    int min_neighbors = 5;
-    // double radius = 0.005;
-    // int min_neighbors = 15;
+    // double radius = 0.01;
+    // int min_neighbors = 5;
+    double radius = 0.005;
+    int min_neighbors = 15;
     radiusOutlierRemoval(radius, min_neighbors, cloud);
 
     // VoxelGrid
@@ -255,39 +244,6 @@ void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
     voxgrid.setLeafSize(0.01f, 0.01f, 0.01f);
     // voxgrid.setLeafSize(0.005f, 0.005f, 0.005f);
     voxgrid.filter(*cloud.get());
-
-    // Smoothing
-    // pcl::MovingLeastSquares<pcl::PointXYZRGB, pcl::PointXYZRGB> mls;
-    // mls.setInputCloud(cloud);
-    // mls.setSearchRadius(0.03);
-    // mls.process(*cloud.get());
-
-
-    // ****** PCL segmentation ******
-    // pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
-    // pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
-    // pcl::SACSegmentation<pcl::PointXYZRGB> sacseg;
-    // // optional 
-    // sacseg.setOptimizeCoefficients(true);
-    // // mandatory 
-    // sacseg.setModelType(pcl::SACMODEL_PLANE);
-    // sacseg.setMethodType(pcl::SAC_RANSAC);
-    // sacseg.setDistanceThreshold(0.01);
-    
-    // sacseg.setInputCloud(cloud);
-    // sacseg.segment(*inliers, *coefficients);
-
-    // PointCloudRGB::Ptr segmented_cloud(new PointCloudRGB);
-    // for (const auto& idx: inliers->indices) {
-    //   segmented_cloud->points.push_back(cloud->points[idx]);
-    // }
-
-    // segmented_cloud->header.frame_id = cloud->header.frame_id;
-    // sensor_msgs::PointCloud2 segmented_cloud_msg;
-    // pcl::toROSMsg(*segmented_cloud.get(), segmented_cloud_msg);
-    // cloud_pub_.publish(segmented_cloud_msg);
-
-    // ****** PCL segmentation ******
 
     // publish the cloud for visualization and debugging purposes
     sensor_msgs::PointCloud2 cloud_msg;
