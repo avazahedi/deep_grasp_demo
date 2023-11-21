@@ -45,6 +45,7 @@
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <rosparam_shortcuts/rosparam_shortcuts.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <std_msgs/Int8.h>
 
 #include <iostream>
 
@@ -185,6 +186,10 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "deep_grasp_demo");
   ros::NodeHandle nh;
 
+  ros::Publisher trajectory_finished_pub = nh.advertise<std_msgs::Int8>("/trajectory_finished", 1000);
+  std_msgs::Int8 traj_fin_msg;
+  traj_fin_msg.data = 0;
+
   ros::AsyncSpinner spinner(1);
   spinner.start();
 
@@ -229,8 +234,14 @@ int main(int argc, char** argv)
       ROS_INFO_NAMED(LOGNAME, "Planning succeded");
       if (pnh.param("execute", false))
       {
+        traj_fin_msg.data = 1;
+        trajectory_finished_pub.publish(traj_fin_msg);
+
         deep_pick_place_task.execute();
         ROS_INFO_NAMED(LOGNAME, "Execution complete");
+
+        traj_fin_msg.data = 2;
+        trajectory_finished_pub.publish(traj_fin_msg);
       }
       else
       {
