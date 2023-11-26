@@ -45,6 +45,11 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/impl/point_types.hpp>
 #include <moveit_msgs/Grasp.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <geometry_msgs/Pose.h>
 
 // Eigen
 #include <Eigen/Dense>
@@ -57,7 +62,7 @@
 
 namespace moveit_task_constructor_gpd
 {
-GraspDetection::GraspDetection(const ros::NodeHandle& nh) : nh_(nh), goal_active_(false)
+GraspDetection::GraspDetection(const ros::NodeHandle& nh) : nh_(nh), goal_active_(false), tfBuffer(), tfListener(tfBuffer)
 {
   loadParameters();
   init();
@@ -113,16 +118,39 @@ void GraspDetection::init()
     // subscriber to /passthrough_filter_vals
     passthrough_sub_ = nh_.subscribe("/passthrough_filter_vals", 1, &GraspDetection::passthroughCallback, this);
 
-    // initialize passthrough values to -99 (dummy default value)
+    // initialize passthrough and center values to -99 (dummy default value)
     pass_xmin = -99;
     pass_xmax = -99;
     pass_ymax = -99;
     pass_ymin = -99;
     pass_depth = -99;
+    obj_xcenter = -99;
+    obj_ycenter = -99;
+
+    // initialize transformStamped to default dummy value
+    transformStamped.transform.translation.x = -99;
+
+    timer = nh_.createTimer(ros::Duration(0.1), &GraspDetection::timerCallback, this);
   }
 
   // Grasp detector
   grasp_detector_.reset(new gpd::GraspDetector(path_to_gpd_config_));
+}
+
+void GraspDetection::timerCallback(const ros::TimerEvent&)
+{
+  // tf2_ros::Buffer tfBuffer;
+  // tf2_ros::TransformListener tfListener(tfBuffer);
+
+  try {
+    // target frame, source frame, ros::Time, (ros::Duration ?)
+    // transformStamped = tfBuffer.lookupTransform("world", "camera_link", ros::Time(0));
+    transformStamped = tfBuffer.lookupTransform("world", "camera_color_optical_frame", ros::Time(0));
+  }
+  catch (tf2::TransformException &ex) {
+    ROS_WARN("%s", ex.what());
+    // ros::Duration(1.0).sleep();
+  }
 }
 
 void GraspDetection::passthroughCallback(const jaco_grasp_ros_interfaces::BboxCoords::ConstPtr& msg)
@@ -132,6 +160,8 @@ void GraspDetection::passthroughCallback(const jaco_grasp_ros_interfaces::BboxCo
   pass_ymax = msg->top[1];
   pass_ymin = msg->bottom[1];
   pass_depth = msg->center_depth;
+  obj_xcenter = msg->center[0];
+  obj_ycenter = msg->center[1];
 }
 
 void GraspDetection::goalCallback()
@@ -209,6 +239,30 @@ void GraspDetection::sampleGrasps()
   server_->setSucceeded(result_);
 }
 
+moveit_msgs::CollisionObject createCollisionObject(const std::string& object_name, 
+                                                   const std::string& object_reference_frame, 
+                                                   const std::vector<double>& object_dimensions, 
+                                                   const geometry_msgs::Pose& object_pose)
+{
+  moveit_msgs::CollisionObject object;
+  object.id = object_name;
+  object.header.frame_id = object_reference_frame;
+  object.primitives.resize(1);
+  object.primitives[0].type = shape_msgs::SolidPrimitive::CYLINDER;
+  object.primitives[0].dimensions = object_dimensions;
+  // object_pose.position.z += 0.5 * object_dimensions[0];
+  object.primitive_poses.push_back(object_pose);
+  object.operation = moveit_msgs::CollisionObject::ADD;
+
+  return object;
+}
+
+void spawnObject(moveit::planning_interface::PlanningSceneInterface& psi, const moveit_msgs::CollisionObject& object)
+{
+  if (!psi.applyCollisionObject(object))
+    throw std::runtime_error("Failed to spawn object: " + object.id);
+}
+
 void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
   // Make sure RealSense has enough time to get a full point cloud before starting processing
@@ -217,7 +271,14 @@ void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
   }
 
   // Make sure passthrough values have been initialized by YOLO object detection bounding box
-  if ((pass_xmin == -99 || pass_xmax == -99 || pass_ymax == -99 || pass_ymin == -99 || pass_depth == -99) && point_cloud_topic_ != "/cloud_pcd") {
+  if ((pass_xmin == -99 || pass_xmax == -99 || pass_ymax == -99 || pass_ymin == -99 || 
+      pass_depth == -99 || obj_xcenter == -99 || obj_ycenter == -99) 
+      && point_cloud_topic_ != "/cloud_pcd") {
+    return;
+  }
+
+  // check that camera_link to world tf has been initialized
+  if (transformStamped.transform.translation.x == -99) {
     return;
   }
 
@@ -249,6 +310,73 @@ void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
     sensor_msgs::PointCloud2 cloud_msg;
     pcl::toROSMsg(*cloud.get(), cloud_msg);
     cloud_pub_.publish(cloud_msg);
+
+    // Create collision object for segmented cloud
+    // tf2_ros::Buffer tfBuffer;
+    // tf2_ros::TransformListener tfListener(tfBuffer);
+    // geometry_msgs::TransformStamped transformStamped;
+    // try {
+    //   // target frame, source frame, ros::Time, (ros::Duration ?)
+    //   transformStamped = tfBuffer.lookupTransform("world", "camera_link", ros::Time(0));
+    // }
+    // catch (tf2::TransformException &ex) {
+    //   ROS_WARN("%s", ex.what());
+    //   // ros::Duration(1.0).sleep();
+    // }
+
+    ros::NodeHandle pnh("~");
+    moveit::planning_interface::PlanningSceneInterface psi;
+    std::string desired_object, object_reference_frame;
+    std::size_t error = 0;
+    error += !rosparam_shortcuts::get(LOGNAME, pnh, "/desired_object", desired_object);
+    error += !rosparam_shortcuts::get(LOGNAME, pnh, "/mtc_tutorial/object_reference_frame", object_reference_frame);
+    rosparam_shortcuts::shutdownIfError(LOGNAME, error);
+
+    auto obj_radius = (pass_xmax - pass_xmin) / 2.0;
+
+    geometry_msgs::Pose obj_cam_pose; // camera frame
+    obj_cam_pose.position.x = obj_xcenter;
+    obj_cam_pose.position.y = obj_ycenter;
+    obj_cam_pose.position.z = pass_depth + obj_radius;  // to center the collision object
+    obj_cam_pose.orientation.x = 0.0;
+    obj_cam_pose.orientation.y = 0.0;
+    obj_cam_pose.orientation.z = 0.0;
+    obj_cam_pose.orientation.w = 1.0;
+
+    ROS_INFO_NAMED(LOGNAME, "obj_cam_pose %f %f %f", obj_cam_pose.position.x, obj_cam_pose.position.y, obj_cam_pose.position.z);
+
+    // obj_pose z is center of object
+    geometry_msgs::Pose obj_pose; // world frame
+    std::vector<double> obj_dimensions(2);  // [height, radius]
+    obj_dimensions.at(0) = pass_ymax - pass_ymin;
+    obj_dimensions.at(1) = obj_radius;
+
+    // populate obj_pose by transforming obj_cam_pose with the camera_link to world tf
+    tf2::doTransform(obj_cam_pose, obj_pose, transformStamped);
+
+    ROS_INFO_NAMED(LOGNAME, "transformStamped translation %f %f %f", 
+                                                        transformStamped.transform.translation.x, 
+                                                        transformStamped.transform.translation.y, 
+                                                        transformStamped.transform.translation.z);
+    ROS_INFO_NAMED(LOGNAME, "transformStamped rotation %f %f %f %f", 
+                                                        transformStamped.transform.rotation.x, 
+                                                        transformStamped.transform.rotation.y, 
+                                                        transformStamped.transform.rotation.z,
+                                                        transformStamped.transform.rotation.w);
+
+    obj_pose.orientation.x = 0.0;
+    obj_pose.orientation.y = 0.0;
+    obj_pose.orientation.z = 0.0;
+    obj_pose.orientation.w = 1.0;
+
+    ROS_INFO_NAMED(LOGNAME, "obj_pose %f %f %f", obj_pose.position.x, obj_pose.position.y, obj_pose.position.z);
+
+    moveit_msgs::CollisionObject collision_object = createCollisionObject(desired_object, 
+                                                                          object_reference_frame, 
+                                                                          obj_dimensions, 
+                                                                          obj_pose);
+    
+    spawnObject(psi, collision_object);
 
     // TODO: set alpha channel to 1
     // GPD required XYZRGBA

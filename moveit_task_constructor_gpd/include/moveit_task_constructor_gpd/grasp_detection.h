@@ -36,6 +36,9 @@
 
 // ROS
 #include <sensor_msgs/PointCloud2.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <tf2_ros/transform_listener.h>
+#include <ros/ros.h>
 
 // C++
 #include <string>
@@ -125,6 +128,12 @@ private:
   */
   void passthroughCallback(const jaco_grasp_ros_interfaces::BboxCoords::ConstPtr& msg);
 
+  /**
+   * @brief Timer callback
+   * @details Continuously running callback
+   */
+  void timerCallback(const ros::TimerEvent&);
+
 private:
   ros::NodeHandle nh_;         // node handle
   ros::Subscriber cloud_sub_;  // subscribes to point cloud
@@ -142,11 +151,19 @@ private:
   std::string action_name_;         // action namespace
   std::string frame_id_;            // frame of point cloud/grasps
 
-  float pass_xmin;  // min x value for passthrough filter
-  float pass_xmax;  // max x value for passthrough filter
-  float pass_ymin;  // min y value for passthrough filter
-  float pass_ymax;  // max y value for passthrough filter
-  float pass_depth; // max z value for passthrough filter
+  float pass_xmin;    // min x value for passthrough filter
+  float pass_xmax;    // max x value for passthrough filter
+  float pass_ymin;    // min y value for passthrough filter
+  float pass_ymax;    // max y value for passthrough filter
+  float pass_depth;   // max z value for passthrough filter
+  float obj_xcenter;  // object center x value (camera frame)
+  float obj_ycenter;  // object center y value (camera frame)
+
+  ros::Timer timer;
+
+  geometry_msgs::TransformStamped transformStamped;
+  tf2_ros::Buffer tfBuffer;
+  tf2_ros::TransformListener tfListener;
 
   bool goal_active_;  // action goal status
   bool load_cloud_;   // load cloud from file

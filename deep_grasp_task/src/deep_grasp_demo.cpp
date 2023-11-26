@@ -218,7 +218,9 @@ int main(int argc, char** argv)
   {
     spawnObject(psi, createObjectMesh());
   }
-  else
+
+  // Spawn collision object in pre-defined location
+  if (pnh.param("spawn_object", true))
   {
     spawnObject(psi, createObject());
   }
