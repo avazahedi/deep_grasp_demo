@@ -22,13 +22,12 @@ surface_link: "table"
 # Collision object for picking
 # CYLINDER object specifications
 spawn_mesh: false
-spawn_object: false
+spawn_object: true
 object_name: "object"
 object_dimensions: [0.25, 0.02] # [height, radius]
-# object_dimensions: [0.25, 0.035] # [height, radius] # pringle can
-# object_pose: [0.5, -0.25, 0.0, 0, 0, 0]
-# object_pose: [0.5, 0, 0, 0, 0, 0]
+# object_dimensions: [0.25, 0.03] # [height, radius] # pringle can
 object_pose: [0, -0.55, 0, 0, 0, 0]
+# object_pose: [0.5, -0.9, 0, 0, 0, 0]
 
 # # BAR CLAMP
 # spawn_mesh: true

@@ -38,6 +38,9 @@
 // ROS
 #include <ros/ros.h>
 
+// Object Detection
+#include "jaco_grasp_ros_interfaces/BboxCoords.h"
+
 // MTC demo implementation
 #include <deep_grasp_task/deep_pick_place_task.h>
 
@@ -54,7 +57,6 @@
 #include <actionlib/client/simple_action_client.h>
 
 constexpr char LOGNAME[] = "deep_grasp_demo";
-
 
 enum class Stage : uint8_t
 {
@@ -180,6 +182,19 @@ moveit_msgs::CollisionObject createObjectMesh()
   return object;
 }
 
+void passthroughCallback(const jaco_grasp_ros_interfaces::BboxCoords::ConstPtr& msg)
+{
+  auto pass_xmin = msg->left[0];
+  auto pass_xmax = msg->right[0];
+  auto pass_ymax = msg->top[1];
+  auto pass_ymin = msg->bottom[1];
+
+  auto obj_radius = (pass_xmax - pass_xmin) / 2.0;
+
+  // obj_dimensions.at(0) = pass_ymax - pass_ymin;
+  // obj_dimensions.at(1) = obj_radius;
+}
+
 int main(int argc, char** argv)
 {
   ROS_INFO_NAMED(LOGNAME, "Init deep_grasp_demo");
@@ -189,6 +204,12 @@ int main(int argc, char** argv)
   ros::Publisher trajectory_finished_pub = nh.advertise<std_msgs::Int8>("/trajectory_finished", 1000);
   std_msgs::Int8 traj_fin_msg;
   traj_fin_msg.data = 0;
+
+  // subscriber to /passthrough_filter_vals
+  std::vector<double> obj_dimensions(2);  // [height, radius]
+  obj_dimensions.at(0) = -99;
+  obj_dimensions.at(1) = -99;
+  ros::Subscriber passthrough_sub = nh.subscribe("/passthrough_filter_vals", 1000, passthroughCallback);
 
   ros::AsyncSpinner spinner(1);
   spinner.start();
@@ -227,6 +248,13 @@ int main(int argc, char** argv)
 
   // Construct and run task
   while (stage == Stage::planning) {
+
+    // // wait for object dimensions to be initialized from point cloud
+    // if (obj_dimensions.at(0) == -99)
+    // {
+    //   continue;
+    // }
+
     deep_grasp_task::DeepPickPlaceTask deep_pick_place_task("deep_pick_place_task", nh);
     deep_pick_place_task.loadParameters();
     deep_pick_place_task.init();

@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
 	rosparam_shortcuts
   rviz_marker_tools
+  jaco_grasp_ros_interfaces
 )
 
 ###################################

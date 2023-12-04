@@ -166,6 +166,7 @@ void GraspDetection::passthroughCallback(const jaco_grasp_ros_interfaces::BboxCo
 
 void GraspDetection::goalCallback()
 {
+  // ROS_INFO_NAMED(LOGNAME, "INSIDE GOAL CALLBACK ########################\n\n\n");
   goal_name_ = server_->acceptNewGoal()->object.name;
   ROS_INFO_NAMED(LOGNAME, "New goal accepted: %s", goal_name_.c_str());
   goal_active_ = true;
@@ -284,99 +285,97 @@ void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
 
   if (goal_active_)
   {
+    // ROS_INFO_NAMED(LOGNAME, "GOAL ACTIVE GRASP DETECTION $$$$$$$$$$$\n\n");
     PointCloudRGB::Ptr cloud(new PointCloudRGB);
     pcl::fromROSMsg(*msg.get(), *cloud.get());
 
-    // Filtering (units: m)
-    // Assuming object is less than 0.1m thick (depth for passthrough)
-    std::vector<double> xyz_lower{pass_xmin, pass_ymin, 0.01};
-    std::vector<double> xyz_upper{pass_xmax, pass_ymax, pass_depth + 0.1};
-    passThroughFilter(xyz_lower, xyz_upper, cloud);
+    if (!load_cloud_)   // not loading cloud, using live point cloud
+    {
+      // Filtering (units: m)
+      auto obj_radius = (pass_xmax - pass_xmin) / 2.0;
+      std::vector<double> xyz_lower{pass_xmin, pass_ymin, 0.01};
+      std::vector<double> xyz_upper{pass_xmax, pass_ymax, pass_depth + obj_radius};
+      passThroughFilter(xyz_lower, xyz_upper, cloud);
 
-    // double radius = 0.01;
-    // int min_neighbors = 5;
-    double radius = 0.005;
-    int min_neighbors = 15;
-    radiusOutlierRemoval(radius, min_neighbors, cloud);
+      // double radius = 0.01;
+      // int min_neighbors = 5;
+      double radius = 0.005;
+      int min_neighbors = 15;
+      radiusOutlierRemoval(radius, min_neighbors, cloud);
 
-    // VoxelGrid
-    pcl::VoxelGrid<pcl::PointXYZRGB> voxgrid;
-    voxgrid.setInputCloud(cloud);
-    voxgrid.setLeafSize(0.01f, 0.01f, 0.01f);
-    // voxgrid.setLeafSize(0.005f, 0.005f, 0.005f);
-    voxgrid.filter(*cloud.get());
+      // VoxelGrid
+      pcl::VoxelGrid<pcl::PointXYZRGB> voxgrid;
+      voxgrid.setInputCloud(cloud);
+      voxgrid.setLeafSize(0.01f, 0.01f, 0.01f);
+      // voxgrid.setLeafSize(0.005f, 0.005f, 0.005f);
+      voxgrid.filter(*cloud.get());
 
-    // publish the cloud for visualization and debugging purposes
-    sensor_msgs::PointCloud2 cloud_msg;
-    pcl::toROSMsg(*cloud.get(), cloud_msg);
-    cloud_pub_.publish(cloud_msg);
+      // publish the cloud for visualization and debugging purposes
+      sensor_msgs::PointCloud2 cloud_msg;
+      pcl::toROSMsg(*cloud.get(), cloud_msg);
+      cloud_pub_.publish(cloud_msg);
 
-    // Create collision object for segmented cloud
-    // tf2_ros::Buffer tfBuffer;
-    // tf2_ros::TransformListener tfListener(tfBuffer);
-    // geometry_msgs::TransformStamped transformStamped;
-    // try {
-    //   // target frame, source frame, ros::Time, (ros::Duration ?)
-    //   transformStamped = tfBuffer.lookupTransform("world", "camera_link", ros::Time(0));
-    // }
-    // catch (tf2::TransformException &ex) {
-    //   ROS_WARN("%s", ex.what());
-    //   // ros::Duration(1.0).sleep();
-    // }
+      // // Create collision object for segmented cloud
+      // ros::NodeHandle pnh("~");
+      // moveit::planning_interface::PlanningSceneInterface psi;
+      // std::string desired_object, object_name, object_reference_frame;
+      // std::size_t error = 0;
+      // error += !rosparam_shortcuts::get(LOGNAME, pnh, "/desired_object", desired_object);
+      // error += !rosparam_shortcuts::get(LOGNAME, pnh, "/mtc_tutorial/object_name", object_name);
+      // error += !rosparam_shortcuts::get(LOGNAME, pnh, "/mtc_tutorial/object_reference_frame", object_reference_frame);
+      // rosparam_shortcuts::shutdownIfError(LOGNAME, error);
 
-    ros::NodeHandle pnh("~");
-    moveit::planning_interface::PlanningSceneInterface psi;
-    std::string desired_object, object_reference_frame;
-    std::size_t error = 0;
-    error += !rosparam_shortcuts::get(LOGNAME, pnh, "/desired_object", desired_object);
-    error += !rosparam_shortcuts::get(LOGNAME, pnh, "/mtc_tutorial/object_reference_frame", object_reference_frame);
-    rosparam_shortcuts::shutdownIfError(LOGNAME, error);
+      // geometry_msgs::Pose obj_cam_pose; // camera frame
+      // obj_cam_pose.position.x = obj_xcenter;
+      // obj_cam_pose.position.y = obj_ycenter;
+      // obj_cam_pose.position.z = pass_depth + obj_radius + 0.01;  // to center the collision object
+      // obj_cam_pose.orientation.x = 0.0;
+      // obj_cam_pose.orientation.y = 0.0;
+      // obj_cam_pose.orientation.z = 0.0;
+      // obj_cam_pose.orientation.w = 1.0;
 
-    auto obj_radius = (pass_xmax - pass_xmin) / 2.0;
+      // // ROS_INFO_NAMED(LOGNAME, "obj_cam_pose %f %f %f", obj_cam_pose.position.x, obj_cam_pose.position.y, obj_cam_pose.position.z);
 
-    geometry_msgs::Pose obj_cam_pose; // camera frame
-    obj_cam_pose.position.x = obj_xcenter;
-    obj_cam_pose.position.y = obj_ycenter;
-    obj_cam_pose.position.z = pass_depth + obj_radius;  // to center the collision object
-    obj_cam_pose.orientation.x = 0.0;
-    obj_cam_pose.orientation.y = 0.0;
-    obj_cam_pose.orientation.z = 0.0;
-    obj_cam_pose.orientation.w = 1.0;
+      // // obj_pose z is center of object
+      // geometry_msgs::Pose obj_pose; // world frame
+      // std::vector<double> obj_dimensions(2);  // [height, radius]
+      // obj_dimensions.at(0) = pass_ymax - pass_ymin;
+      // obj_dimensions.at(1) = obj_radius - 0.005;
 
-    ROS_INFO_NAMED(LOGNAME, "obj_cam_pose %f %f %f", obj_cam_pose.position.x, obj_cam_pose.position.y, obj_cam_pose.position.z);
+      // // populate obj_pose by transforming obj_cam_pose with the camera_link to world tf
+      // tf2::doTransform(obj_cam_pose, obj_pose, transformStamped);
 
-    // obj_pose z is center of object
-    geometry_msgs::Pose obj_pose; // world frame
-    std::vector<double> obj_dimensions(2);  // [height, radius]
-    obj_dimensions.at(0) = pass_ymax - pass_ymin;
-    obj_dimensions.at(1) = obj_radius;
+      // // ROS_INFO_NAMED(LOGNAME, "transformStamped translation %f %f %f", 
+      // //                                                     transformStamped.transform.translation.x, 
+      // //                                                     transformStamped.transform.translation.y, 
+      // //                                                     transformStamped.transform.translation.z);
+      // // ROS_INFO_NAMED(LOGNAME, "transformStamped rotation %f %f %f %f", 
+      // //                                                     transformStamped.transform.rotation.x, 
+      // //                                                     transformStamped.transform.rotation.y, 
+      // //                                                     transformStamped.transform.rotation.z,
+      // //                                                     transformStamped.transform.rotation.w);
 
-    // populate obj_pose by transforming obj_cam_pose with the camera_link to world tf
-    tf2::doTransform(obj_cam_pose, obj_pose, transformStamped);
+      // obj_pose.orientation.x = 0.0;
+      // obj_pose.orientation.y = 0.0;
+      // obj_pose.orientation.z = 0.0;
+      // obj_pose.orientation.w = 1.0;
 
-    ROS_INFO_NAMED(LOGNAME, "transformStamped translation %f %f %f", 
-                                                        transformStamped.transform.translation.x, 
-                                                        transformStamped.transform.translation.y, 
-                                                        transformStamped.transform.translation.z);
-    ROS_INFO_NAMED(LOGNAME, "transformStamped rotation %f %f %f %f", 
-                                                        transformStamped.transform.rotation.x, 
-                                                        transformStamped.transform.rotation.y, 
-                                                        transformStamped.transform.rotation.z,
-                                                        transformStamped.transform.rotation.w);
+      // // ROS_INFO_NAMED(LOGNAME, "obj_pose %f %f %f", obj_pose.position.x, obj_pose.position.y, obj_pose.position.z);
 
-    obj_pose.orientation.x = 0.0;
-    obj_pose.orientation.y = 0.0;
-    obj_pose.orientation.z = 0.0;
-    obj_pose.orientation.w = 1.0;
+      // // set rosparams
+      // // ros::param::set("/mtc_tutorial/object_name", desired_object);
+      // ros::param::set("/mtc_tutorial/object_dimensions", obj_dimensions);
+      // std::vector<double> obj_pose_vec {obj_pose.position.x, obj_pose.position.y, obj_pose.position.z, 0.0, 0.0, 0.0};
+      // ros::param::set("/mtc_tutorial/object_pose", obj_pose_vec);
 
-    ROS_INFO_NAMED(LOGNAME, "obj_pose %f %f %f", obj_pose.position.x, obj_pose.position.y, obj_pose.position.z);
+      // moveit_msgs::CollisionObject collision_object = createCollisionObject(object_name, 
+      //                                                                       object_reference_frame, 
+      //                                                                       obj_dimensions, 
+      //                                                                       obj_pose);
+      
+      // spawnObject(psi, collision_object);
+    }
 
-    moveit_msgs::CollisionObject collision_object = createCollisionObject(desired_object, 
-                                                                          object_reference_frame, 
-                                                                          obj_dimensions, 
-                                                                          obj_pose);
-    
-    spawnObject(psi, collision_object);
 
     // TODO: set alpha channel to 1
     // GPD required XYZRGBA
