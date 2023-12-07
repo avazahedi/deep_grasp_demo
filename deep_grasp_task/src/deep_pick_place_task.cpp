@@ -30,7 +30,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Henning Kayser, Simon Goldstein, Boston Cleek
+/* Author: Henning Kayser, Simon Goldstein, Boston Cleek, Ava Zahedi
    Desc:   A demo to show MoveIt Task Constructor using a deep learning based
            grasp generator
 */

@@ -30,7 +30,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Boston Cleek
+/* Author: Boston Cleek, Ava Zahedi
    Desc: Grasp pose detection (GPD) node, option to load a point cloud from a file
          or subscribe to a point cloud topic. If loading from file the the point cloud
          subscriber and publisher will not be available. Communication with MTC
@@ -48,7 +48,7 @@
     trans_base_cam - transform from robot base link to camera link
     view_point - (x,y,z) view point of camera usually (0,0,0)
   PUBLISHES:
-    segmented_cloud (optional) (sensor_msgs/PointCloud2) - Point cloud after table is removed
+    segmented_cloud (optional) (sensor_msgs/PointCloud2) - Point cloud after segmentation and filtering for the desired object
   SUBSCRIBES:
     point_cloud_topic (optinal) (sensor_msgs/PointCloud2) - Point cloud from depth camera
 */

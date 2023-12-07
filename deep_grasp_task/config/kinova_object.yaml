@@ -24,9 +24,7 @@ surface_link: "table"
 spawn_mesh: false
 object_name: "object"
 object_dimensions: [0.25, 0.02] # [height, radius]
-# object_dimensions: [0.25, 0.035] # [height, radius] # pringle can
 # object_pose: [0.5, -0.25, 0.0, 0, 0, 0]
-# object_pose: [0.5, 0, 0, 0, 0, 0]
 object_pose: [0, -0.55, 0, 0, 0, 0]
 
 # # BAR CLAMP
@@ -58,8 +56,7 @@ table_name: "table"
 table_dimensions: [2.0, 2.0, 0.1]  # [length, width, height]
 table_pose: [0, 0, -0.01, 0, 0, 0]
 
-#### Jaco j2s7s300 end-effector frame is in the middle of gripper ####
-# Gripper grasp frame transform [x,y,z,r,p,y]
+# Gripper grasp frame transform [x,y,z,r,p,y]   # Jaco j2s7s300 end-effector frame is in the middle of gripper
 # grasp_frame_transform: [0, 0, 0, 1.571, 0.785, 1.571]
 grasp_frame_transform: [0, 0, -0.05, 1.571, 0.785, 1.571]
 
